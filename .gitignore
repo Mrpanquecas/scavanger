@@ -6,8 +6,8 @@
 .pnp.js
 
 # testing
-/coverage
-
+/pics
+/comparison.csv
 # production
 /build
 

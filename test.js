@@ -1,48 +1,49 @@
-const puppeteer = require('puppeteer')
-const fs = require('fs')
-const express = require('express')
+const puppeteer = require('puppeteer');
 
+const self = {
+  browser: null,
+  page: null,
 
-(async () => {
-  const browser = await puppeteer.launch({headless: false, slowMo: 350})
-  const page = await browser.newPage()
-  await page.goto('https://hey-phones.com/categoria-produto/iphone/')
-  const selectorForLoadMoreButton = '.load-on-click'
-  let visible = true;
-  const isElementVisible = async (page, selector) => {
-    await page
-        .waitForSelector(selector, { visible: true, timeout: 5000 })
-        .catch(() => {
-          visible = false;
-        });
-      return visible;
-  }
-  let loadMoreVisible = await isElementVisible(page, selectorForLoadMoreButton);
-''
-  while (loadMoreVisible) {
-    await page
-      .click(selectorForLoadMoreButton)
-      .catch(() => {});
-    loadMoreVisible = await isElementVisible(page, selectorForLoadMoreButton);
-  }
-
-  const arrayOfProducts = await page.evaluate(() => {
-    const prods = Array.from(document.querySelectorAll('.product-info'))
-    return prods.map(prod => prod.innerText)
-  })
-
-
-
-  fs.writeFile("./pics/test.html", arrayOfProducts, function(err) {
-    if(err) {
-        return console.log(err);
+  getDom: async () => {
+    self.browser = await puppeteer.launch({headless: false, slowMo: 350})
+    self.page = await self.browser.newPage()
+    await self.page.goto('https://hey-phones.com/categoria-produto/iphone/')
+    const selectorForLoadMoreButton = '.load-on-click'
+    let visible = true
+    const isElementVisible = async (page = self.page, selector) => {
+      await page
+          .waitForSelector(selector, { visible: true, timeout: 5000 })
+          .catch(() => {
+            visible = false
+          })
+        return visible
     }
+    let loadMoreVisible = await isElementVisible(page = self.page, selectorForLoadMoreButton)
+    while (loadMoreVisible) {
+      await page
+        .click(selectorForLoadMoreButton)
+        .catch(() => {})
+      loadMoreVisible = await isElementVisible(page = self.page, selectorForLoadMoreButton)
+    }
+  },
 
-    console.log("The file was saved!");
-}); 
-  console.log(arrayOfProducts)
+  parseResults: async (products) => {
+    const prods = await self.page.$$('div[class=product-info]')
+    const payload = []
+    for(let prod of prods){
+      const title = await prod.$eval(('h3[class=product-title] > a'), node => node.innerText)
+      const oldPrice = await prod.$eval(('span[class=price] > del'), node => node.innerText)
+      const newPrice = await prod.$eval(('span[class=price] > ins'), node => node.innerText)
+      payload.push({
+        title,
+        oldPrice,
+        newPrice
+      })
+    }
+    await self.browser.close()
+    return payload
+  }
+}
 
-  await page.screenshot({path: 'example.png', fullPage: true})
 
-  await browser.close()
-})()
+module.exports = self;
