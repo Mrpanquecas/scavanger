@@ -41,9 +41,10 @@ const self = {
       const newPrice = await (await (await prod.$('span[class=price] > ins')).getProperty('textContent')).jsonValue()
       payload.push({
         title,
-        oldPrice,
-        newPrice
+        oldPrice: oldPrice.replace('€', ''),
+        newPrice: newPrice.replace('€', '')
       })
+      console.log(title, oldPrice, newPrice)
     }
     await self.browser.close()
     return payload
@@ -52,8 +53,9 @@ const self = {
   saveResultsToCsv: async (data, columns) => {
     stringify(data, { header: true, delimiter: ';', columns: columns }, (err, output) => {
       if (err) throw err;
-      fs.writeFile('./data_dump/comparison.csv', output, (err) => {
+      fs.writeFile('./data_dump/dump2.csv', output, (err) => {
           if (err) throw err;
+          console.log('dump2 saved')
       })
     })
   }
