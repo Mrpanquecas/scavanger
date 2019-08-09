@@ -6,8 +6,8 @@
 .pnp.js
 
 # testing
-/pics
-/comparison.csv
+/data_dump/comparison.csv
+
 # production
 /build
 
